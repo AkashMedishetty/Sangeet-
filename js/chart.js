@@ -11,7 +11,7 @@
     red: [200, 40, 56], green: [46, 170, 74],
     axis: "rgba(244,236,214,0.62)", label: "rgba(244,236,214,0.82)", grid: "rgba(244,236,214,0.075)"
   };
-  var ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
+  var ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
   function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
   function easeOut(t) { t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); }

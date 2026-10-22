@@ -23,8 +23,8 @@
       '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0" stop-color="#fff3c8"/><stop offset=".42" stop-color="#ecc966"/>' +
       '<stop offset=".7" stop-color="#b3862a"/><stop offset="1" stop-color="#f3d684"/></linearGradient></defs>' +
-      '<text x="84" y="108" text-anchor="middle" font-family="Cinzel, serif" font-weight="600" font-size="128" fill="url(#' + id + ')">S</text>' +
-      '<text x="134" y="140" text-anchor="middle" font-family="Cinzel, serif" font-weight="600" font-size="108" fill="url(#' + id + ')">P</text>' +
+      '<text x="84" y="108" text-anchor="middle" font-family="Cinzel, serif" font-weight="600" font-size="128" fill="url(#' + id + ')" class="mono__a">S</text>' +
+      '<text x="134" y="140" text-anchor="middle" font-family="Cinzel, serif" font-weight="600" font-size="108" fill="url(#' + id + ')" class="mono__b">P</text>' +
       '<path d="M18 160 C48 160 58 146 80 150 C96 153 94 168 81 166 C70 164 73 151 89 155 L131 155 C147 151 150 164 139 166 C126 168 124 153 140 150 C162 146 172 160 202 160" ' +
       'fill="none" stroke="url(#' + id + ')" stroke-width="3.2" stroke-linecap="round"/>' +
       '<circle cx="110" cy="155" r="4" fill="url(#' + id + ')"/></svg>';
@@ -113,7 +113,7 @@
         '<div class="mg__track"><span class="mg__co mg__co--l" id="mgL"></span><span class="mg__co mg__co--r" id="mgR"></span></div>' +
         '<div class="reveal reveal--merger"><span class="mg__mono">' + monogram("mgMerger") + '</span>' +
           '<span class="mask"><span class="mg__title gold">Stock Merger</span></span><span class="hair"></span>' +
-          '<span class="mask"><span class="mg__val"><span>SP COMPOSITE</span><b id="mgVal">0.00</b></span></span></div>' +
+          '<span class="mask"><span class="mg__val"><span id="mgIdx">SP COMPOSITE</span><b id="mgVal">0.00</b></span></span></div>' +
       '</section>' +
 
       // ---- 9: final act ----------------------------------------------------
@@ -121,9 +121,17 @@
         '<img class="fn__photo" src="media/couple.jpg" alt="" onerror="this.remove()">' +
         '<div class="reveal reveal--finale"><span class="fn__mono">' + monogram("mgFinale") + '</span>' +
           '<span class="mask"><span class="fn__names gold" id="fnNames"></span></span>' +
-          '<span class="mask"><span class="fn__sub">the two sides, now one</span></span><span class="hair"></span>' +
+          '<span class="mask"><span class="fn__sub" id="fnLine"></span></span><span class="hair"></span>' +
           '<span class="mask"><span class="eyebrow" id="fnEv"></span></span></div>' +
       '</section>' +
+
+      // ---- pairing: QR for the operator's phone (pre-show only) ----------
+      '<section class="pairing" id="pairing"><div class="pairing__card">' +
+        '<span class="eyebrow">Pair the show controller</span>' +
+        '<div class="pairing__qr" id="pairQR"></div>' +
+        '<div class="pairing__code">SESSION <b id="pairCode"></b></div>' +
+        '<p class="pairing__hint">Scan with the operator’s phone camera. This hides as soon as a phone is paired — press <kbd>P</kbd> on this laptop to show it again.</p>' +
+      '</div></section>' +
 
       // ---- standby / handed to VJ ----------------------------------------
       '<section class="scene sc-standby" id="scStandby"><div class="plaque plaque--lg"><small>THE</small>EXCHANGE</div></section>' +
@@ -133,7 +141,7 @@
     ["wall", "board", "tapeTop", "tapeBot", "chartG", "chartB", "nameG", "nameB", "arrG", "arrB", "priceG", "priceB",
      "chgG", "chgB", "cA", "cB", "cEv", "bellL1", "cd", "cdArc", "cdNum", "cdReveal", "cdName", "entName", "entQuote",
      "pfRound", "pfName", "pfQuote", "pfArea", "pfLine",
-     "vtRound", "vtG", "vtB", "resK", "resPts", "resName", "mgL", "mgR", "mgVal", "fnNames", "fnEv",
+     "vtRound", "vtG", "vtB", "resK", "resPts", "resName", "mgL", "mgR", "pairing", "pairQR", "pairCode", "mgVal", "mgIdx", "fnNames", "fnEv", "fnLine",
      "scBell", "scCount", "scEntry", "scPerform", "scVote", "scResult", "scMerger", "scFinale", "scStandby"
     ].forEach(function (id) { el[id] = document.getElementById(id); });
   }
@@ -156,7 +164,7 @@
     } else {
       for (var j = 0; j < Math.max(1, items.length); j++) one += msg(j) + '<span class="tk tk--gold tk--sep">◆</span>';
     }
-    if (s.round > 0 && tape.quotes !== false) one += '<span class="tk tk--gold">ROUND ' + s.round + ' OF ' + CFG.rounds + '</span>';
+    if (s.round > 0 && tape.quotes !== false) one += '<span class="tk tk--gold">ROUND ' + s.round + ' OF ' + M.rounds(s) + '</span>';
     return one + one + one + one;
   }
 
@@ -179,7 +187,7 @@
   function series(s, side) {
     var real = s[side].series;
     if (real.length) return real;
-    if (s.scene === "home") return EX.demoSeries(side === "groom" ? 0 : 1.4);
+    if (s.scene === "home") return EX.demoSeries(side === "groom" ? 0 : 1.4, M.rounds(s));
     return [];
   }
 
@@ -200,14 +208,28 @@
     el.entName.textContent = co.name;
     el.entQuote.innerHTML = co.series.length ? quoteLine(co) : co.code + " · LISTING TONIGHT";
     el.pfName.textContent = co.name;
-    el.pfRound.textContent = "Round " + Math.min(CFG.rounds, s.round + 1) + " · On stage";
+    el.pfRound.textContent = "Round " + Math.min(M.rounds(s), s.round + 1) + " · On stage";
     el.pfQuote.innerHTML = co.series.length ? quoteLine(co) : "";
     if (sc === "perform") perfChart(co);
-    el.vtRound.textContent = "Round " + Math.min(CFG.rounds, s.round + 1);
+    el.vtRound.textContent = "Round " + Math.min(M.rounds(s), s.round + 1);
     el.vtG.textContent = s.groom.name; el.vtB.textContent = s.bride.name;
     el.mgL.textContent = s.groom.name; el.mgR.textContent = s.bride.name;
     el.fnNames.textContent = s.couple.a + " & " + s.couple.b;
     el.fnEv.textContent = s.couple.event;
+    el.fnLine.textContent = s.couple.line;
+    var mono = (s.couple.mono || "").toUpperCase();
+    var ma = mono.charAt(0) || s.couple.a.charAt(0), mb = mono.charAt(1) || s.couple.b.charAt(0);
+    el.mgIdx.textContent = ma + mb + " COMPOSITE";
+    document.querySelectorAll(".mono__a").forEach(function (n) { n.textContent = ma; });
+    document.querySelectorAll(".mono__b").forEach(function (n) { n.textContent = mb; });
+    document.title = s.couple.a + " & " + s.couple.b + " — LED Wall";
+
+    // custom names can be any length: shrink type so nothing wraps or clips
+    fit(el.nameG, 6.2, 13); fit(el.nameB, 6.2, 13);
+    fit(el.cA, 5.6, 8); fit(el.cB, 5.6, 8);
+    fit(el.cdName, 13, 15); fit(el.entName, 14, 14); fit(el.pfName, 10, 16);
+    fit(el.vtG, 6, 15); fit(el.vtB, 6, 15); fit(el.mgL, 6, 15); fit(el.mgR, 6, 15);
+    fit(el.resName, 8, 22); fit(el.fnNames, 12, 20);
 
     toggle(el.board, !!BOARD_SCENES[sc]);
     toggle(el.scBell, sc === "bell");
@@ -237,7 +259,7 @@
 
   // The performing family's own chart, drawn across the whole wall.
   function perfChart(co) {
-    var sv = co.series.length > 1 ? co.series.slice() : EX.demoSeries(co === state.groom ? 0 : 1.4);
+    var sv = co.series.length > 1 ? co.series.slice() : EX.demoSeries(co === state.groom ? 0 : 1.4, M.rounds(state));
     var n = sv.length, lo = Math.min.apply(null, sv), hi = Math.max.apply(null, sv), span = Math.max(1, hi - lo);
     var pts = sv.map(function (v, i) { return [80 + (1440 * i) / Math.max(1, n - 1), 780 - ((v - lo) / span) * 470]; });
     var d = "M" + pts[0][0] + " " + pts[0][1];
@@ -264,13 +286,18 @@
     });
   }
 
+  function fit(node, base, maxChars) {
+    var n = (node.textContent || "").length;
+    node.style.fontSize = n > maxChars ? (base * maxChars / n).toFixed(2) + "cqh" : "";
+  }
+
   function toggle(node, on) { node.classList.toggle("show", !!on); }
 
   function playResult(s) {
     var side = s.fx.side, co = s[side];
     el.scResult.setAttribute("data-side", side);
     el.resK.textContent = "Round " + s.round + " · Result called";
-    el.resPts.textContent = "+" + CFG.winPoints;
+    el.resPts.textContent = "+" + M.points(s);
     el.resName.textContent = co.name;
     el.scResult.classList.remove("play"); void el.scResult.offsetWidth; el.scResult.classList.add("play");
   }
@@ -301,8 +328,8 @@
     }
     var gold = s.scene === "merger" || s.scene === "finale";
     var live = s.market === "open";
-    window.EXChart.draw(el.chartG, { series: gs, side: "groom", scale: scale, rounds: CFG.rounds, grow: growing === "groom" ? grow : 1, gold: gold, t: t, live: live });
-    window.EXChart.draw(el.chartB, { series: bs, side: "bride", scale: scale, rounds: CFG.rounds, grow: growing === "bride" ? grow : 1, gold: gold, t: t, live: live });
+    window.EXChart.draw(el.chartG, { series: gs, side: "groom", scale: scale, rounds: M.rounds(s), grow: growing === "groom" ? grow : 1, gold: gold, t: t, live: live });
+    window.EXChart.draw(el.chartB, { series: bs, side: "bride", scale: scale, rounds: M.rounds(s), grow: growing === "bride" ? grow : 1, gold: gold, t: t, live: live });
     quote("G", gs, growing === "groom" ? grow : 1);
     quote("B", bs, growing === "bride" ? grow : 1);
   }
@@ -351,7 +378,42 @@
     apply(s);
     EX.onState(apply);
     requestAnimationFrame(loop);
-    if (!preview) { EX.hello(); setInterval(EX.hello, 1500); EX.connect("wall", function (on, st) { if (st) apply(st); }); }
+    if (!preview) {
+      EX.hello(); setInterval(EX.hello, 1500);
+      startSession();
+      document.addEventListener("keydown", function (e) {
+        if (e.key.toLowerCase() === "p" && !e.metaKey && !e.ctrlKey) { pair.force = !pair.force; updatePair(); }
+      });
+    }
+  }
+
+  // ---- session + pairing ---------------------------------------------------
+  var pair = { session: null, paired: false, force: false, drawn: "" };
+
+  function startSession() {
+    var fresh = /[?&]new=1/.test(location.search);
+    var s = fresh ? null : (EX.sessionFromURL() || EX.getSession());
+    (s ? Promise.resolve(s) : EX.createSession()).then(function (sess) {
+      pair.session = sess;
+      if (location.search.indexOf("s=" + sess.sid) < 0) history.replaceState(null, "", location.pathname + "?s=" + sess.sid);
+      EX.on("meta", function (m) { pair.paired = !!m.paired; updatePair(); });
+      EX.connect("wall", sess, function (online, st) { if (st) apply(st); updatePair(); });
+    }).catch(function () { /* no API here (local file / python server): same-laptop mode */ });
+  }
+
+  function updatePair() {
+    var s = pair.session, show = !!(s && s.key && (pair.force || !pair.paired));
+    el.pairing.classList.toggle("show", show);
+    if (!show || pair.drawn === s.sid + s.key) return;
+    pair.drawn = s.sid + s.key;
+    el.pairCode.textContent = s.sid;
+    var url = EX.pairURL(s);
+    if (window.qrcode) {
+      var qr = window.qrcode(0, "M"); qr.addData(url); qr.make();
+      el.pairQR.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
+    } else {
+      el.pairQR.textContent = url; // QR library unavailable — the link still pairs
+    }
   }
 
   window.EXBoard = { init: init, preview: preview };
