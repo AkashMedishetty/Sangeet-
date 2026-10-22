@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Exchange — LED Wall</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@200;300;400;500;600;700&family=Cinzel:wght@500;600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500&display=swap" />
+  <link rel="stylesheet" href="css/exchange.css" />
+</head>
+<body>
+  <div id="root"></div>
+  <div id="fsHint">CLICK FOR FULLSCREEN</div>
+  <script src="js/state.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/board.js"></script>
+  <script>
+    window.EXBoard.init(document.getElementById("root"));
+    var hint = document.getElementById("fsHint");
+    if (window.EXBoard.preview) {
+      hint.remove();
+    } else {
+      setTimeout(function () { hint.style.opacity = 0; }, 6000);
+      document.body.addEventListener("click", function () {
+        var d = document.documentElement;
+        if (!document.fullscreenElement) (d.requestFullscreen || d.webkitRequestFullscreen || function () {}).call(d);
+        else (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+      });
+      document.body.style.cursor = "none";
+    }
+  </script>
+</body>
+</html>
