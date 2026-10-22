@@ -133,7 +133,38 @@
       transition: opacity .25s, transform .35s var(--ease); }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+    .sync { padding: 4px 9px; border: 1px solid var(--line-2); border-radius: 4px; }
+    .sync.on { color: var(--gold-hi); border-color: rgba(201,162,39,0.4); }
+
     @media (max-width: 1280px) { .grid { grid-template-columns: 300px minmax(0, 1fr); } .col.right { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); } }
+
+    /* ---- phone: one column, the calls first, big thumbs-friendly targets ---- */
+    @media (max-width: 760px) {
+      .top { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
+      .spacer, .btn-out, .kbd, .cue.live::before { display: none; }
+      .brand { font-size: 17px; flex: 1 0 100%; }
+      .tally { font-size: 13px; } .link { font-size: 11px; }
+      .grid { display: flex; flex-direction: column; padding: 12px 12px 90px; gap: 12px; }
+      .grid .col, .grid .col.right { display: contents; }
+      .card { padding: 12px; }
+      .grid .col:nth-child(2) > .card:first-child { order: 1; }
+      .grid .col:nth-child(2) > .card:nth-child(2) { order: 2; }
+      .grid .col:first-child > .card { order: 3; }
+      .grid .col.right > .card:first-child { order: 4; }
+      .grid .col.right > .card:nth-child(2) { order: 5; }
+      .grid .col.right > .card:nth-child(3) { order: 6; }
+      .score { grid-template-columns: 1fr auto 1fr; gap: 8px; }
+      .stk { padding: 10px; } .stk .nm { font-size: 12px; } .stk .px { font-size: 30px; }
+      .rnd .v { font-size: 28px; }
+      .calls { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        background: rgba(6,6,6,0.94); border-top: 1px solid var(--line); backdrop-filter: blur(8px); }
+      .call { padding: 16px 10px; font-size: 21px; }
+      .cue { padding: 13px 12px; }
+      .cue .t { font-size: 15px; }
+      .pair { grid-template-columns: 1fr 1fr; }
+      .toast { bottom: 96px; }
+    }
+
   </style>
 </head>
 <body>
@@ -141,6 +172,7 @@
     <div class="brand">THE EXCHANGE<small>SHOW CONTROL · THE 1 CALLER</small></div>
     <div class="spacer"></div>
     <div class="tally"><span class="pill">ON AIR</span><b id="onAir">HOME LOOK</b></div>
+    <div class="link sync" id="sync">CONNECTING…</div>
     <div class="link" id="link"><i></i><span>WALL NOT OPEN</span></div>
     <button class="btn-out" id="btnOutput">OPEN LED WALL ↗</button>
   </header>

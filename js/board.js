@@ -222,7 +222,7 @@
     // one-shot moments
     if (s.fx && s.fx.seq !== seen.fx) {
       seen.fx = s.fx.seq;
-      var fresh = Date.now() - (s.fx.ts || 0) < 4000;
+      var fresh = EX.now() - (s.fx.ts || 0) < 4000;
       if (fresh && s.fx.type === "result") playResult(s);
     }
     if (sc === "merger" && s.fused != null && seen.mgFrom !== s.fx.seq) { seen.mgFrom = s.fx.seq; countUp(el.mgVal, s.fused, 2400, 2600); }
@@ -281,7 +281,7 @@
     requestAnimationFrame(loop);
     var dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0; lastTs = ts; t += dt;
     if (!state) return;
-    var s = state, now = Date.now();
+    var s = state, now = EX.now();
 
     if (BOARD_SCENES[s.scene]) drawBoard(s, now);
     if (s.scene === "countdown") drawCountdown(s, now);
@@ -347,11 +347,11 @@
     build(root);
     var s = EX.load();
     seen.fx = s.fx ? s.fx.seq : 0; // don't replay an old call on reload…
-    if (s.fx && Date.now() - s.fx.ts < 4000) seen.fx = -1; // …unless it just happened
+    if (s.fx && EX.now() - s.fx.ts < 4000) seen.fx = -1; // …unless it just happened
     apply(s);
     EX.onState(apply);
     requestAnimationFrame(loop);
-    if (!preview) { EX.hello(); setInterval(EX.hello, 1500); }
+    if (!preview) { EX.hello(); setInterval(EX.hello, 1500); EX.connect("wall", function (on, st) { if (st) apply(st); }); }
   }
 
   window.EXBoard = { init: init, preview: preview };

@@ -166,7 +166,30 @@
     $("clock").textContent = [d.getHours(), d.getMinutes(), d.getSeconds()].map(function (n) { return String(n).padStart(2, "0"); }).join(":");
   }, 500);
 
+  // Another console (laptop ⇄ phone) changed the show: adopt it.
+  EX.onState(function (s) {
+    st = s;
+    var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
+    if (!typing) fillTape();
+    render();
+  });
+
+  // Wrong or missing PIN: ask once, remember it on this device, resend.
+  EX.on("auth", function (pending) {
+    var pin = window.prompt("Enter the show control PIN");
+    if (!pin) { toast("Not sent — PIN needed to control the wall"); return; }
+    localStorage.setItem(EX.PIN_KEY, pin.trim());
+    EX.publish(pending);
+  });
+  EX.on("offline", function () { toast("No connection — retrying…"); });
+
   fillTape();
-  EX.publish(st);
   render();
+  // Pull the live show first so a fresh phone never overwrites it.
+  EX.connect("control", function (online, server) {
+    if (online && server) { st = server; fillTape(); render(); }
+    else EX.publish(st);
+    $("sync").textContent = online ? "ONLINE · PHONE READY" : "THIS LAPTOP ONLY";
+    $("sync").classList.toggle("on", online);
+  });
 })();

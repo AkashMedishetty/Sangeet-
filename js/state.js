@@ -50,9 +50,14 @@
     };
   }
 
+  // Countdown and +50 timing must line up across phone and wall, so every
+  // device reads the server's clock (offset learned from each API reply).
+  var clockOffset = 0;
+  function now() { return Date.now() + clockOffset; }
+
   function last(s) { return s.series.length ? s.series[s.series.length - 1] : 0; }
   function fire(st, type, side) {
-    st.fx = { type: type, side: side || null, seq: (st.fx.seq || 0) + 1, ts: Date.now() };
+    st.fx = { type: type, side: side || null, seq: (st.fx.seq || 0) + 1, ts: now() };
   }
 
   var Model = {
@@ -62,7 +67,7 @@
     cue: function (st, scene, side) {
       st.scene = scene;
       st.side = side || null;
-      if (scene === "countdown") st.cd = { start: Date.now() };
+      if (scene === "countdown") st.cd = { start: now() };
       return st;
     },
 
@@ -142,9 +147,84 @@
 
   function publish(state) {
     state.rev = (state.rev || 0) + 1;
-    state.ts = Date.now();
+    state.ts = now();
+    local(state);
+    if (remote.on && remote.role === "control") send(state);
+  }
+
+  // same-browser fan-out (wall window, preview iframes)
+  function local(state) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
     if (bc) { try { bc.postMessage({ kind: "state", state: state }); } catch (e) {} }
+  }
+
+  // ---- Remote sync: phone ⇄ Vercel function ⇄ wall ------------------------
+  // Only the console and the real wall connect. Preview pages stay local.
+  var PIN_KEY = "the-exchange-pin";
+  var remote = { on: false, role: null, srev: 0, busy: false, pending: null };
+
+  function api(method, body, qs) {
+    var t0 = Date.now();
+    return fetch("/api/state" + (qs || ""), {
+      method: method, cache: "no-store",
+      headers: body ? { "Content-Type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (j && j.now) clockOffset = j.now - (t0 + Date.now()) / 2;
+        j.status = r.status;
+        return j;
+      });
+    });
+  }
+
+  function take(j) {
+    if (remote.role === "control" && j.wall && j.now - j.wall < 6000) emit("hello", j.wall);
+    var st = j.state;
+    if (st && st.srev > remote.srev) {
+      remote.srev = st.srev;
+      if (!st.tape) st.tape = defaultState().tape;
+      local(st);
+      emit("state", st);
+    }
+  }
+
+  function send(state) {
+    if (remote.busy) { remote.pending = state; return; }
+    remote.busy = true;
+    api("POST", { pin: localStorage.getItem(PIN_KEY) || "", state: state }).then(function (j) {
+      remote.busy = false;
+      if (j.status === 401) { emit("auth", state); return; }
+      if (j.status !== 200) throw new Error("relay " + j.status);
+      if (j.srev) { remote.srev = Math.max(remote.srev, j.srev); state.srev = j.srev; emit("sent", j.srev); }
+      if (remote.pending) { var p = remote.pending; remote.pending = null; send(p); }
+    }).catch(function () {
+      remote.busy = false;
+      emit("offline");
+      setTimeout(function () { send(remote.pending || state); remote.pending = null; }, 1200);
+    });
+  }
+
+  // cb(remoteAvailable, serverState|null) — called once after the first pull.
+  function connect(role, cb) {
+    remote.role = role;
+    var beats = 0;
+    api("GET", null, role === "wall" ? "?hb=1" : "").then(function (j) {
+      if (j.status !== 200) throw new Error("no api");
+      remote.on = true;
+      var st = j.state;
+      if (st) { remote.srev = st.srev || 0; if (!st.tape) st.tape = defaultState().tape; local(st); }
+      if (cb) cb(true, st || null);
+      if (role === "control" && j.wall && j.now - j.wall < 6000) emit("hello", j.wall);
+      (function poll() {
+        var wait = role === "wall" ? 450 : 1000;
+        if (document.hidden && role !== "wall") return setTimeout(poll, 3000);
+        var hb = role === "wall" && (++beats % 4 === 0);
+        api("GET", null, hb ? "?hb=1" : "").then(function (r) { if (r.status === 200) take(r); })
+          .catch(function () { emit("offline"); })
+          .then(function () { setTimeout(poll, wait); });
+      })();
+    }).catch(function () { if (cb) cb(false, null); }); // local file / python server: same-laptop mode
   }
 
   // The wall output announces itself so the console can show "WALL LINKED".
@@ -192,6 +272,11 @@
     demoSeries: demoSeries,
     publish: publish,
     hello: hello,
+    now: now,
+    connect: connect,
+    remote: remote,
+    PIN_KEY: PIN_KEY,
+    on: on,
     onState: function (cb) { on("state", cb); },
     onHello: function (cb) { on("hello", cb); },
     load: load
